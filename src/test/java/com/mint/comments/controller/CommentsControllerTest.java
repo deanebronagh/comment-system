@@ -8,10 +8,8 @@ import org.springframework.security.test.web.reactive.server.SecurityMockServerC
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mint.comments.SecurityControllerAdvice;
 import com.mint.comments.models.Comment;
-import com.mint.comments.repositories.CommentsRepository;
 import com.mint.comments.service.CommentsServiceImpl;
 
 import reactor.core.publisher.Flux;
@@ -31,28 +29,28 @@ import org.junit.jupiter.api.Test;
 class CommentsControllerTest {
 
 	@Autowired
-	ObjectMapper mapper;
-
-	@Autowired
 	WebTestClient webTestClient;
 
 	@MockBean
 	CommentsServiceImpl mockService;
 
-	@MockBean
-	CommentsRepository mockRepo;
-
 	Comment comment;
+	
+	final static String EDIT_ENDPOINT = "/edit-comment/";
+	final static String CREATE_ENDPOINT = "/add-comment";
+	final static String DELETE_ENDPOINT = "/delete-comment/";
+	
+	final static String COMMENT_TEXT = "abcd";
 
 	@BeforeEach
 	void setUp() throws Exception {
 		comment = new Comment();
-		comment.setText("abcd");
+		comment.setText(COMMENT_TEXT);
 	}
 
 	@Test
 	void testRead() throws Exception {
-		List<Comment> comments = new ArrayList<Comment>();
+		final List<Comment> comments = new ArrayList<Comment>();
 		comments.add(comment);
 		when(mockService.readComments()).thenReturn(Flux.fromIterable(comments));
 		
@@ -65,7 +63,7 @@ class CommentsControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBodyList(Comment.class)
-        .value(comment -> comment.get(0).getText().equals("abcd"));
+        .value(comment -> comment.get(0).getText().equals(COMMENT_TEXT));
 	}
 
 	@Test
@@ -75,13 +73,13 @@ class CommentsControllerTest {
 		webTestClient
 			.mutateWith(SecurityMockServerConfigurers.mockUser())
 			.mutateWith(SecurityMockServerConfigurers.csrf()).post()
-	        .uri("/add-comment")
+	        .uri(CREATE_ENDPOINT)
 	        .accept(MediaType.APPLICATION_JSON)
 	        .bodyValue(comment)
 	        .exchange()
 	        .expectStatus().isCreated()
 	        .expectBody(Comment.class)
-	        .value(comment -> comment.getText().equals("abcd"));
+	        .value(comment -> comment.getText().equals(COMMENT_TEXT));
 	}
 	
 	@Test
@@ -89,7 +87,7 @@ class CommentsControllerTest {
 		webTestClient
 			.mutateWith(SecurityMockServerConfigurers.mockUser())
 			.mutateWith(SecurityMockServerConfigurers.csrf()).post()
-	        .uri("/add-comment")
+	        .uri(CREATE_ENDPOINT)
 	        .accept(MediaType.APPLICATION_JSON)
 	        .bodyValue(new Comment())
 	        .exchange()
@@ -106,13 +104,13 @@ class CommentsControllerTest {
 		webTestClient
 			.mutateWith(SecurityMockServerConfigurers.mockUser())
 			.mutateWith(SecurityMockServerConfigurers.csrf()).put()
-	        .uri("/edit-comment/1")
+	        .uri(EDIT_ENDPOINT + "1")
 	        .accept(MediaType.APPLICATION_JSON)
 	        .bodyValue(comment)
 	        .exchange()
 	        .expectStatus().isOk()
 	        .expectBody(Comment.class)
-	        .value(comment -> comment.getText().equals("abcd"));
+	        .value(comment -> comment.getText().equals(COMMENT_TEXT));
 	}
 	
 	@Test
@@ -120,7 +118,7 @@ class CommentsControllerTest {
 		webTestClient
 			.mutateWith(SecurityMockServerConfigurers.mockUser())
 			.mutateWith(SecurityMockServerConfigurers.csrf()).put()
-	        .uri("/edit-comment/1")
+	        .uri(EDIT_ENDPOINT+"1")
 	        .accept(MediaType.APPLICATION_JSON)
 	        .bodyValue(new Comment())
 	        .exchange()
@@ -131,17 +129,34 @@ class CommentsControllerTest {
 	void testEditNullParameterID() throws Exception {
 		comment.setDateCreated(LocalDateTime.now());
 		comment.setLastModified(LocalDateTime.now());
-		comment.setId(1L);
-		when(mockService.editComment(any(Comment.class))).thenReturn(Mono.just(comment));
+		comment.setId(3L);
 		
 		webTestClient
 			.mutateWith(SecurityMockServerConfigurers.mockUser())
 			.mutateWith(SecurityMockServerConfigurers.csrf()).put()
-	        .uri("/edit-comment/null")
+	        .uri(EDIT_ENDPOINT+"null")
 	        .accept(MediaType.APPLICATION_JSON)
 	        .bodyValue(comment)
 	        .exchange()
 	        .expectStatus().isBadRequest();
+	}
+	
+	@Test
+	void testEditDifferentParameterIDAndBodyId() throws Exception {
+		comment.setDateCreated(LocalDateTime.now());
+		comment.setLastModified(LocalDateTime.now());
+		comment.setId(1L);
+		
+		webTestClient
+			.mutateWith(SecurityMockServerConfigurers.mockUser())
+			.mutateWith(SecurityMockServerConfigurers.csrf()).put()
+	        .uri(EDIT_ENDPOINT+"2")
+	        .accept(MediaType.APPLICATION_JSON)
+	        .bodyValue(comment)
+	        .exchange()
+	        .expectStatus().is4xxClientError()
+	        .expectBody()
+	        .equals("Resource specified in path does not match resouce specified in body");
 	}
 	
 	@Test
@@ -151,7 +166,7 @@ class CommentsControllerTest {
 		webTestClient
 			.mutateWith(SecurityMockServerConfigurers.mockUser())
 			.mutateWith(SecurityMockServerConfigurers.csrf()).delete()
-	        .uri("/delete-comment/1")
+	        .uri(DELETE_ENDPOINT+"1")
 	        .accept(MediaType.APPLICATION_JSON)
 	        .exchange()
 	        .expectStatus().isNoContent();
@@ -163,7 +178,7 @@ class CommentsControllerTest {
 		webTestClient
 			.mutateWith(SecurityMockServerConfigurers.mockUser())
 			.mutateWith(SecurityMockServerConfigurers.csrf()).delete()
-	        .uri("/delete-comment/null")
+	        .uri(DELETE_ENDPOINT+"null")
 	        .accept(MediaType.APPLICATION_JSON)
 	        .exchange()
 	        .expectStatus().isBadRequest();

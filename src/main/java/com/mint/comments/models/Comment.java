@@ -43,12 +43,11 @@ public class Comment {
 	@CreatedDate
 	@NotNull(groups = ExistingComment.class)
     @Column("dateCreated")
-	LocalDateTime dateCreated;
+	private LocalDateTime dateCreated;
 	
-    
 	@LastModifiedDate
 	@NotNull(groups = ExistingComment.class)
 	@Column("lastModified")
-    LocalDateTime lastModified;
+    private LocalDateTime lastModified;
 
 }

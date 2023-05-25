@@ -32,8 +32,7 @@ public class CommentsServiceImpl implements CommentsService {
 	@Override
 	public Mono<Comment> createComment(final Comment comment) {
 		log.info("Saving new comment: " + comment.getText());
-		final Mono<Comment> savedComment = commentsRepository.save(comment);
-		return savedComment;
+		return commentsRepository.save(comment);
 	}
 
 	@Override

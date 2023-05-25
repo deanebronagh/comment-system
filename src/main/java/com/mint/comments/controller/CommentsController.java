@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mint.comments.models.Comment;
 import com.mint.comments.models.ExistingComment;
 import com.mint.comments.service.CommentsService;
+import com.mint.comments.exceptions.CommentException;
 
 import jakarta.validation.constraints.NotNull;
 import reactor.core.publisher.Flux;
@@ -24,8 +25,6 @@ import reactor.core.publisher.Mono;
 
 @RestController
 public class CommentsController {
-	
-	// TODO: bulkhead?
 	
 	@Autowired
 	private CommentsService commentsService;
@@ -59,10 +58,14 @@ public class CommentsController {
 	 * @param id - id of the comment to be edited, must be specified
 	 * @param comment - the comment with updated text field, validation is performed on all fields
 	 * @return the updated comment
+	 * @throws CommentException 
 	 */
 	@PutMapping(value = "/edit-comment/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 	@ResponseStatus(HttpStatus.OK)
-	public Mono<Comment> editComment(@PathVariable("id") @Validated @NotNull final Long id, @Validated(ExistingComment.class) @RequestBody final Comment comment) {
+	public Mono<Comment> editComment(@PathVariable("id") @Validated @NotNull final Long id, @Validated(ExistingComment.class) @RequestBody final Comment comment) throws CommentException {
+		if (!id.equals(comment.getId())) {
+			throw new CommentException("Resource specified in path does not match resouce specified in body");
+		}
 		return commentsService.editComment(comment);
 	}
 	

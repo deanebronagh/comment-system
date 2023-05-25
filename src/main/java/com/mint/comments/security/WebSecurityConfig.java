@@ -12,7 +12,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 public class WebSecurityConfig {
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
 		// enabling csrf for aplplication security
 		// exposing comment endpoints
 		// exposing actuator endpoints
